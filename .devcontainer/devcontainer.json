@@ -1,0 +1,68 @@
+{
+    "name": "OnePlus Kernel Dev",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+
+    // --- USB device passthrough ---
+    // Privileged gives full /dev access including USB.
+    // For tighter security, use "runArgs" with --device instead.
+    "privileged": true,
+    "runArgs": [
+        // Mount host USB bus into container
+        "--volume=/dev/bus/usb:/dev/bus/usb",
+        // Mount host udev info so devices are recognized
+        "--volume=/run/udev:/run/udev:ro",
+        // Needed for USB hotplug events
+        "--network=host"
+    ],
+
+    // Mount points
+    "mounts": [
+        // Persist ccache across rebuilds
+        "type=volume,source=oneplus-kernel-ccache,target=/home/vscode/.ccache",
+        // Persist clang toolchain downloads
+        "type=volume,source=oneplus-kernel-toolchain,target=/home/vscode/toolchain"
+    ],
+
+    "containerEnv": {
+        "CCACHE_DIR": "/home/vscode/.ccache",
+        "USE_CCACHE": "1",
+        "CCACHE_MAXSIZE": "50G",
+        "ARCH": "arm64",
+        "SUBARCH": "arm64"
+    },
+
+    // Features
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+
+    // VS Code extensions for kernel development
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.makefile-tools",
+                "mads-hartmann.bash-ide-vscode",
+                "EditorConfig.EditorConfig"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "C_Cpp.default.compilerPath": "/usr/bin/clang",
+                "files.associations": {
+                    "*.h": "c",
+                    "*.dts": "dts",
+                    "*.dtsi": "dts",
+                    "Kconfig*": "kconfig",
+                    "Makefile*": "makefile"
+                }
+            }
+        }
+    },
+
+    "postCreateCommand": "bash .devcontainer/post-create.sh",
+    "remoteUser": "vscode"
+}

@@ -1,0 +1,50 @@
+# Build outputs
+out/
+*.o
+*.ko
+*.mod
+*.mod.c
+*.cmd
+modules.order
+Module.symvers
+vmlinux
+vmlinux.o
+Image
+Image.gz
+Image.gz-dtb
+dtbo.img
+boot.img
+
+# Build system
+.config
+.config.old
+include/config/
+include/generated/
+arch/*/include/generated/
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+.ccls-cache/
+compile_commands.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-build-logs/
+
+# AnyKernel3 packaging
+AnyKernel3/*.zip
+*.zip
+
+# Toolchains (download separately)
+toolchain/
+clang/
+gcc/
+prebuilts/
