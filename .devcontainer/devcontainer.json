@@ -23,7 +23,14 @@
         // Persist ccache across rebuilds
         "type=volume,source=oneplus-kernel-ccache,target=/home/vscode/.ccache",
         // Persist clang toolchain downloads
-        "type=volume,source=oneplus-kernel-toolchain,target=/home/vscode/toolchain"
+        "type=volume,source=oneplus-kernel-toolchain,target=/home/vscode/toolchain",
+        // GitHub CLI auth
+        "type=bind,source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,consistency=cached",
+        // Claude Code credentials and config
+        "type=bind,source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,consistency=cached",
+        // Claude Code binary
+        "type=bind,source=${localEnv:HOME}/.local/share/claude,target=/home/vscode/.local/share/claude,readonly,consistency=cached",
+        "type=bind,source=${localEnv:HOME}/.local/bin/claude,target=/home/vscode/.local/bin/claude,readonly,consistency=cached"
     ],
 
     "containerEnv": {
@@ -31,13 +38,15 @@
         "USE_CCACHE": "1",
         "CCACHE_MAXSIZE": "50G",
         "ARCH": "arm64",
-        "SUBARCH": "arm64"
+        "SUBARCH": "arm64",
+        "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"
     },
 
     // Features
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
-        "ghcr.io/devcontainers/features/github-cli:1": {}
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/sshd:1": {}
     },
 
     // VS Code extensions for kernel development
