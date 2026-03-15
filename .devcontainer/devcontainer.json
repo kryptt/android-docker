@@ -24,9 +24,8 @@
         "type=volume,source=oneplus-kernel-ccache,target=/home/vscode/.ccache",
         // Persist clang toolchain downloads
         "type=volume,source=oneplus-kernel-toolchain,target=/home/vscode/toolchain",
-        // GitHub CLI auth
-        "type=bind,source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,consistency=cached",
         // Claude Code credentials and config
+        "type=bind,source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,consistency=cached",
         "type=bind,source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,consistency=cached",
         // Claude Code binary
         "type=bind,source=${localEnv:HOME}/.local/share/claude,target=/home/vscode/.local/share/claude,readonly,consistency=cached",
@@ -39,6 +38,10 @@
         "CCACHE_MAXSIZE": "50G",
         "ARCH": "arm64",
         "SUBARCH": "arm64",
+        "GH_TOKEN": "${localEnv:GH_TOKEN}"
+    },
+
+    "remoteEnv": {
         "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"
     },
 
