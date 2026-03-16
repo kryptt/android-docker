@@ -5,7 +5,7 @@ set -euo pipefail
 IMAGE_NAME="oneplus-kernel-builder"
 CONTAINER_NAME="kernel-build"
 
-DEVICE="${1:-oneplus12}"
+DEVICE="${1:-oneplus7pro}"
 VARIANT="${2:-user}"
 
 echo "==> Building Docker image..."

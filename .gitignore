@@ -32,19 +32,33 @@ arch/*/include/generated/
 .ccls-cache/
 compile_commands.json
 
+# Secrets
+.envrc
+
 # OS files
 .DS_Store
 Thumbs.db
 
 # Docker
 docker-build-logs/
+docker-binaries/
 
 # AnyKernel3 packaging
 AnyKernel3/*.zip
 *.zip
 
+# Kernel sources (cloned by setup.sh)
+kernel/
+
 # Toolchains (download separately)
 toolchain/
 clang/
+clang-old/
 gcc/
 prebuilts/
+
+# LineageOS flash images
+lineageos/
+
+# AnyKernel3
+AnyKernel3/

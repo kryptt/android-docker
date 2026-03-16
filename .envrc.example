@@ -1,0 +1,12 @@
+# Docker Swarm cluster secrets and network config.
+# Copy this to .envrc and fill in your values.
+# .envrc is gitignored and will NOT be committed.
+
+export NFS_SERVER="<nfs-server-ip>"
+export SWARM_TOKEN="<docker-swarm-join-token>"
+export SWARM_MANAGER="<swarm-manager-ip>:2377"
+
+# NFS mounts (server_path:mount_point, newline-separated)
+export NFS_MOUNTS="/swarm/main:/swarm/main
+/swarm/storage:/swarm/storage
+/media/local:/media/main"
