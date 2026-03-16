@@ -120,20 +120,26 @@ adb -s "$SERIAL" push "$TMPENV" /data/docker/swarm.env 2>&1 | tail -1
 adb_root 'chmod 600 /data/docker/swarm.env'
 rm -f "$TMPENV"
 
-echo "==> Pushing boot script..."
+echo "==> Pushing scripts..."
+adb -s "$SERIAL" push "${SCRIPT_DIR}/start-dockerd.sh" /data/docker/start-dockerd.sh 2>&1 | tail -1
 adb -s "$SERIAL" push "${SCRIPT_DIR}/docker-swarm-boot.sh" /data/docker/boot-worker.sh 2>&1 | tail -1
-adb_root 'chmod 755 /data/docker/boot-worker.sh'
+adb_root 'chmod 755 /data/docker/start-dockerd.sh /data/docker/boot-worker.sh'
 
-# --- Install init.rc trigger -------------------------------------------------
-echo "==> Installing init.rc boot trigger..."
+# --- Install init.rc boot trigger -------------------------------------------------
+# dockerd runs as an init service (init keeps it alive / restarts on crash).
+# boot-worker.sh runs once after boot_completed for swarm join + SSH.
+echo "==> Installing init.rc..."
 adb_root 'mount -o rw,remount / 2>/dev/null'
 adb_root 'cat > /system/etc/init/docker-swarm.rc << "INITEOF"
-service docker_swarm /system/bin/sh /data/docker/boot-worker.sh
+service dockerd /system/bin/sh /data/docker/start-dockerd.sh
     class late_start
     user root
     group root
     seclabel u:r:su:s0
     writepid /dev/cpuset/foreground/tasks
+
+on property:sys.boot_completed=1
+    exec_background u:r:su:s0 root root -- /system/bin/sh /data/docker/boot-worker.sh
 INITEOF'
 adb_root 'chmod 644 /system/etc/init/docker-swarm.rc'
 

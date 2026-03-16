@@ -31,7 +31,7 @@ Add entries to three files:
 
 **`scripts/devices.conf`** — device registry (see file for format):
 ```
-mydevice|<serial>|<codename>|<platform>|<fastboot-product>|<has_recovery>|<has_super>|<nfs_version>
+mydevice|<serial>|<codename>|<platform>|<fastboot-product>|<has_recovery>|<has_super>|<nfs_version>|<hostname>
 ```
 
 **`setup.sh`** — kernel repo and branch in `KERNEL_REPOS` and `KERNEL_BRANCHES`.

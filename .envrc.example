@@ -6,7 +6,8 @@ export NFS_SERVER="<nfs-server-ip>"
 export SWARM_TOKEN="<docker-swarm-join-token>"
 export SWARM_MANAGER="<swarm-manager-ip>:2377"
 
-# NFS mounts (server_path:mount_point, newline-separated)
+# NFS mounts — one per line, format: server_export_path:local_mount_point
+# Parsed by start-dockerd.sh using IFS=: (colon separator)
 export NFS_MOUNTS="/swarm/main:/swarm/main
 /swarm/storage:/swarm/storage
 /media/local:/media/main"
