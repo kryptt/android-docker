@@ -103,11 +103,6 @@ if [ ! -d /var ] || [ ! -L /var/run ]; then
 fi
 log "/run mounted"
 
-# --- Symlink standard Docker paths (for swarm services expecting Linux defaults)
-mkdir -p /var/lib
-[ -L /var/lib/docker ] || ln -sf /data/docker/lib /var/lib/docker 2>/dev/null
-[ -L /var/run/docker.sock ] || ln -sf /data/docker/run/docker.sock /var/run/docker.sock 2>/dev/null
-
 # --- Mount cgroups ------------------------------------------------------------
 log "Mounting cgroups..."
 if ! mountpoint -q /sys/fs/cgroup 2>/dev/null; then
