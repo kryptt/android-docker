@@ -11,7 +11,7 @@ the swarm on every boot.
 |--------|-------|-----|--------|----------|----------|--------|
 | 2e2e5cbf | OnePlus 7 Pro (GM1911) | LineageOS 23.2 | 4.14.356 (custom) | guacamole | SM8150 | Working |
 | 8e1cdcbe | OnePlus 8 Pro (IN2023) | LineageOS 23.2 | 4.19.325 (custom) | instantnoodlep | SM8250 | Working |
-| 8e81497e | OnePlus 10 Pro (NE2213) | OxygenOS 16.0.3 | 5.10.236 (stock) | OP516FL1 | SM8450 | Needs setup |
+| 8e81497e | OnePlus 10 Pro (NE2213) | LineageOS 23.0 (unofficial) | 5.10.236 (custom) | wly | SM8450 | Needs setup |
 
 See `scripts/devices.conf` for serial numbers, codenames, and feature flags.
 

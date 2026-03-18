@@ -32,7 +32,7 @@ source "$(dirname "$0")/scripts/kernel-devices.sh"
 declare -A DEFCONFIGS=(
     [oneplus7pro]="vendor/sm8150-perf_defconfig vendor/oplus.config"
     [oneplus8pro]="vendor/kona-perf_defconfig vendor/oplus.config"
-    [oneplus10pro]="gki_defconfig vendor/waipio_GKI.config"
+    [oneplus10pro]="gki_defconfig vendor/waipio_GKI.config vendor/oplus_GKI.config"
 )
 
 KERNEL_DIR="${KERNEL_DIRS[$DEVICE]:-}"

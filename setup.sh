@@ -16,13 +16,13 @@ echo "==> Setting up OnePlus kernel development environment"
 declare -A KERNEL_REPOS=(
     [oneplus7pro]="https://github.com/LineageOS/android_kernel_oneplus_sm8150"
     [oneplus8pro]="https://github.com/LineageOS/android_kernel_oneplus_sm8250"
-    [oneplus10pro]="https://github.com/LineageOS/android_kernel_oneplus_sm8450"
+    [oneplus10pro]="https://github.com/pjgowtham/android_kernel_oneplus_sm8450"
 )
 
 declare -A KERNEL_BRANCHES=(
     [oneplus7pro]="lineage-23.2"
     [oneplus8pro]="lineage-23.2"
-    [oneplus10pro]="lineage-22.2"
+    [oneplus10pro]="lineage-23.0"
 )
 
 # shellcheck source=scripts/kernel-devices.sh
