@@ -29,7 +29,9 @@
         "type=bind,source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,consistency=cached",
         // Claude Code binary
         "type=bind,source=${localEnv:HOME}/.local/share/claude,target=/home/vscode/.local/share/claude,readonly,consistency=cached",
-        "type=bind,source=${localEnv:HOME}/.local/bin/claude,target=/home/vscode/.local/bin/claude,readonly,consistency=cached"
+        "type=bind,source=${localEnv:HOME}/.local/bin/claude,target=/home/vscode/.local/bin/claude,readonly,consistency=cached",
+        // SSH agent socket forwarding
+        "type=bind,source=${localEnv:SSH_AUTH_SOCK},target=/tmp/ssh-agent.sock"
     ],
 
     "containerEnv": {
@@ -38,7 +40,8 @@
         "CCACHE_MAXSIZE": "50G",
         "ARCH": "arm64",
         "SUBARCH": "arm64",
-        "GH_TOKEN": "${localEnv:GH_TOKEN}"
+        "GH_TOKEN": "${localEnv:GH_TOKEN}",
+        "SSH_AUTH_SOCK": "/tmp/ssh-agent.sock"
     },
 
     "remoteEnv": {

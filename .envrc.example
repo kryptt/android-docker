@@ -1,4 +1,4 @@
-# Docker Swarm cluster secrets and network config.
+# Docker Swarm / K3s cluster secrets and network config.
 # Copy this to .envrc and fill in your values.
 # .envrc is gitignored and will NOT be committed.
 
@@ -7,7 +7,35 @@ export SWARM_TOKEN="<docker-swarm-join-token>"
 export SWARM_MANAGER="<swarm-manager-ip>:2377"
 
 # NFS mounts — one per line, format: server_export_path:local_mount_point
-# Parsed by start-dockerd.sh using IFS=: (colon separator)
+# Parsed by start-dockerd.sh / start-k3s.sh using IFS=: (colon separator)
 export NFS_MOUNTS="/swarm/main:/swarm/main
 /swarm/storage:/swarm/storage
 /media/local:/media/main"
+
+# --- K3s agent config (used by deploy-device.sh --k3s) -----------------------
+# K3s server node token (from: cat /var/lib/rancher/k3s/server/node-token on a server)
+export K3S_TOKEN="<k3s-node-token>"
+
+# Dual-IP scheme: phones get a second IP on wlan0 in the cluster's pod-network
+# subnet (10.20.0.0/24). That IP is the k3s --node-ip; the WiFi IP is just the
+# underlay. Each Gentoo node needs a matching static route:
+#   ip route add 10.20.0.24/32 via 192.168.2.24
+#   ip route add 10.20.0.25/32 via 192.168.2.25
+# (Persist via systemd-networkd / OpenRC / NetworkManager — see flannel-vxlan
+# alternative was rejected in favour of this approach to avoid touching k3s.)
+
+# K3s cluster nodes — one entry per node, format: "vlan10_ip:vlan20_ip:wifi_ip"
+# Phones add /32 routes for BOTH vlan10 (control-plane / node-IP) and vlan20
+# (pod-network underlay) via the node's WiFi IP, so replies from the phone
+# return correctly regardless of which source IP a Gentoo node picks.
+# 'src' is set to K3S_NODE_IP so the phone presents its cluster identity.
+#
+# Used to be split into K3S_MANAGER_* (vlan10, control-plane only) and
+# K3S_NODE_* (vlan20, all nodes). That split silently broke any non-control-
+# plane node's vlan10 reachability — pods on agents couldn't get scrape
+# replies from the phones because the phone had no return route for that
+# vlan10 IP.
+export K3S_NODE_1="10.10.0.1:10.20.0.1:<hr-main-wifi-ip>"
+export K3S_NODE_2="10.10.0.2:10.20.0.2:192.168.2.22"
+export K3S_NODE_3="10.10.0.3:10.20.0.3:192.168.2.23"
+export K3S_NODE_4="10.10.0.4:10.20.0.4:192.168.2.21"

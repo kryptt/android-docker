@@ -63,9 +63,11 @@ for pair in \
     link="${pair%:*}"
     parent_dir="${link%/*}"
     [ -d "$parent_dir" ] || mkdir -p "$parent_dir"
+    # Ensure target dir exists even if link already does (target can be wiped
+    # while symlink survives across reboots, leaving containerd unable to mkdir).
+    mkdir -p "$target"
     if [ ! -L "$link" ]; then
         rm -rf "$link" 2>/dev/null
-        mkdir -p "$target"
         ln -sfn "$target" "$link"
     fi
 done

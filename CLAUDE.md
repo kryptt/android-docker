@@ -2,16 +2,20 @@
 
 ## Project Overview
 Build environment for turning Android phones into Docker Swarm worker nodes with
-persistent NFS mounts. Custom kernels add Docker/Swarm/NFS support that stock
+persistent NFS mounts. Custom kernels add Docker/Swarm/NFS/VLAN support that stock
 Android kernels lack. The phones auto-start Docker, mount NFS shares, and join
-the swarm on every boot.
+the swarm on every boot. The cluster is planned to migrate from Docker Swarm to k3s.
 
 ## Devices
 | Serial | Model | OS | Kernel | Codename | Platform | Status |
 |--------|-------|-----|--------|----------|----------|--------|
-| 2e2e5cbf | OnePlus 7 Pro (GM1911) | LineageOS 23.2 | 4.14.356 (custom) | guacamole | SM8150 | Working |
-| 8e1cdcbe | OnePlus 8 Pro (IN2023) | LineageOS 23.2 | 4.19.325 (custom) | instantnoodlep | SM8250 | Working |
-| 8e81497e | OnePlus 10 Pro (NE2213) | LineageOS 23.0 (unofficial) | 5.10.236 (custom) | wly | SM8450 | Needs setup |
+| 2e2e5cbf | OnePlus 7 Pro (GM1911) | LineageOS 23.2 | 4.14.356 (custom) | guacamole | SM8150 | Working (Docker + NFS) |
+| 8e1cdcbe | OnePlus 8 Pro (IN2023) | LineageOS 23.2 | 4.19.325 (custom) | instantnoodlep | SM8250 | Working (Docker + NFS) |
+| 8e81497e | OnePlus 10 Pro (NE2213) | LineageOS 23.0 (unofficial) | 5.10.239 (stock) | wly | SM8450 | NFS only (no Docker) |
+
+**OnePlus 10 Pro limitations:** GKI kernel ABI constraints prevent enabling CGROUP_PIDS
+(required by container runtimes). Qualcomm HypX blocks KVM at EL2 (no VM workaround).
+See `feedback_gki_vendor_dlkm.md` in memory for full details.
 
 See `scripts/devices.conf` for serial numbers, codenames, and feature flags.
 
@@ -25,9 +29,10 @@ The deploy script pushes these secrets to each device as `/data/docker/swarm.env
 .devcontainer/          Dev container config with USB passthrough
 build.sh                Main kernel build script (merges docker-swarm-nfs.config)
 setup.sh                Clones kernel sources + clang toolchain + AnyKernel3
-docker-swarm-nfs.config Kernel config fragment: Docker/Swarm/iptables/NFS/IPVS
+docker-swarm-nfs.config Kernel config fragment: Docker/Swarm/iptables/NFS/IPVS/VLAN
 oneplus7pro-fixes.config  Device-specific: disables NFS v4 (boot failure on 4.14)
-oneplus10pro-fixes.config Device-specific: disables oplus sensor (undefined symbols)
+oneplus10pro-fixes.config Device-specific: disables oplus sensor + MODVERSIONS
+tools/mkbootimg-aosp/   AOSP mkbootimg for creating boot.img (header v2/v4)
 kernel/sm8150/          OnePlus 7 Pro kernel source (LineageOS lineage-23.2)
 kernel/sm8250/          OnePlus 8 Pro kernel source (LineageOS lineage-23.2)
 kernel/sm8450/          OnePlus 10 Pro kernel source (LineageOS lineage-22.2)

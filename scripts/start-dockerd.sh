@@ -31,15 +31,52 @@ mkdir -p /var/lib /run/lock /run/docker /run/containerd /var/empty
 [ -L /var/lib/docker ] || ln -sf /data/docker/lib /var/lib/docker 2>/dev/null
 [ -L /var/run/docker.sock ] || ln -sf /data/docker/run/docker.sock /var/run/docker.sock 2>/dev/null
 
-# Networking (non-blocking)
+# Networking — clear Android firewall chains that block Docker bridge traffic
 echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null
-iptables -F tetherctrl_FORWARD 2>/dev/null
+echo 1 > /proc/sys/net/ipv4/conf/all/forwarding 2>/dev/null
+echo 1 > /proc/sys/net/ipv6/conf/all/forwarding 2>/dev/null
 
-# Cgroups
-if [ -d /dev/cpuctl ] && [ -f /dev/cpuctl/cpu.cfs_period_us ]; then
-    mkdir -p /sys/fs/cgroup/cpu,cpuacct
-    mountpoint -q /sys/fs/cgroup/cpu,cpuacct 2>/dev/null || \
-        mount --bind /dev/cpuctl /sys/fs/cgroup/cpu,cpuacct 2>/dev/null
+# Flush all Android FORWARD sub-chains (they default-DROP and block container traffic)
+for chain in tetherctrl_FORWARD oem_fwd fw_FORWARD bw_FORWARD natctrl_FORWARD; do
+    iptables -F "$chain" 2>/dev/null
+    ip6tables -F "$chain" 2>/dev/null
+done
+
+# Set FORWARD policy to ACCEPT — dockerd will manage its own DOCKER-FORWARD rules
+iptables -P FORWARD ACCEPT 2>/dev/null
+ip6tables -P FORWARD ACCEPT 2>/dev/null
+
+# Bridge netfilter — required for Docker bridge networking to apply iptables to bridged traffic
+if [ -d /proc/sys/net/bridge ]; then
+    echo 1 > /proc/sys/net/bridge/bridge-nf-call-iptables 2>/dev/null
+    echo 1 > /proc/sys/net/bridge/bridge-nf-call-ip6tables 2>/dev/null
+fi
+
+# Policy routing — Android never looks up the "main" routing table where Docker
+# adds its bridge/overlay subnet routes.  Without these rules, container traffic
+# to Docker subnets is routed out wlan0 instead of docker0/docker_gwbridge.
+for subnet in 172.16.0.0/12 10.0.0.0/8; do
+    ip rule add to "$subnet" lookup main prio 9000 2>/dev/null
+    ip rule add from "$subnet" lookup main prio 9000 2>/dev/null
+done
+
+# Cgroups — mount full hierarchy that Docker expects under /sys/fs/cgroup
+mountpoint -q /sys/fs/cgroup 2>/dev/null || \
+    mount -t tmpfs -o mode=755 cgroup_root /sys/fs/cgroup 2>/dev/null
+
+for subsys in cpu,cpuacct cpuset blkio memory pids devices freezer; do
+    dir="/sys/fs/cgroup/${subsys}"
+    mkdir -p "$dir"
+    if ! mountpoint -q "$dir" 2>/dev/null; then
+        # Use the real subsystem name for mount (strip comma-joined aliases)
+        mount -t cgroup -o "${subsys}" "cgroup_${subsys}" "$dir" 2>/dev/null
+    fi
+done
+
+# Ensure cpuset defaults are set (Docker needs these to create child cgroups)
+if [ -f /sys/fs/cgroup/cpuset/cpuset.cpus ] && [ ! -s /sys/fs/cgroup/cpuset/cpuset.cpus ]; then
+    grep Cpus_allowed_list /proc/self/status | awk '{print $2}' > /sys/fs/cgroup/cpuset/cpuset.cpus 2>/dev/null
+    grep Mems_allowed_list /proc/self/status | awk '{print $2}' > /sys/fs/cgroup/cpuset/cpuset.mems 2>/dev/null
 fi
 
 # Hostname
@@ -78,9 +115,13 @@ fi
     fi
     echo "$(date '+%Y-%m-%d %H:%M:%S') WiFi: $WIFI_IP" >> "$LOGFILE"
 
-    # Default route
-    GATEWAY=$(ip route show table all | grep "default via" | grep wlan0 | head -1 | awk '{print $3}')
-    [ -n "$GATEWAY" ] && ip route add default via "$GATEWAY" dev wlan0 2>/dev/null
+    # Default route — must exist in the main table for Docker container forwarding.
+    # Android keeps the default route only in the per-interface wlan0 table, so we
+    # copy it into main (where our prio-9000 ip rules direct Docker traffic).
+    GATEWAY=$(ip route show table wlan0 | grep "default via" | head -1 | awk '{print $3}')
+    if [ -n "$GATEWAY" ]; then
+        ip route replace default via "$GATEWAY" dev wlan0 table main 2>/dev/null
+    fi
 
     # NFS mounts
     MOUNT_NFS="/data/docker/bin/mount_nfs"
