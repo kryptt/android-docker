@@ -24,6 +24,16 @@ log() {
 
 log "========== K3S AGENT START =========="
 
+# --- umask --------------------------------------------------------------------
+# Android init's `seclabel u:r:su:s0` services start with umask 077, which
+# makes containerd create every snapshot's `fs/` directory as drwx------
+# (0700). The merged overlay rootfs is then 0700, so any container running
+# as a non-root user (Fleet's gitcloner-initializer at uid=1000, for one)
+# can't traverse `/` and fails with "exec: foo: file not found in $PATH"
+# or "shared library: Permission denied". Setting umask 022 here is
+# inherited by k3s-agent → containerd → all snapshots.
+umask 022
+
 # --- SELinux & filesystem -----------------------------------------------------
 setenforce 0
 mount -o rw,remount / 2>/dev/null
