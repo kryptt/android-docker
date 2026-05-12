@@ -63,3 +63,8 @@ lineageos/
 # AnyKernel3
 AnyKernel3/
 .ssh/
+
+# Self-contained glusterfs binary tree extracted from the hr-fleet
+# image by scripts/extract-glusterfs-host-tree.sh and pushed to
+# /data/glusterfs/ on each device by scripts/deploy-device.sh.
+glusterfs-host-tree/

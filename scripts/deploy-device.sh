@@ -111,6 +111,28 @@ else
 
     echo "==> Pushing k3s binary..."
     adb -s "$SERIAL" push "$K3S_BIN" /data/docker/bin/k3s 2>&1 | tail -1
+
+    # GlusterFS host-side install. start-k3s.sh has an existing block
+    # that wants /data/glusterfs/{bin/glusterfs,lib/glusterfs} on the
+    # device; without these files it can't mount /swarm/ha at boot and
+    # the in-cluster glusterfs-client DaemonSet can only mount the
+    # volume inside its own mount namespace (invisible to every other
+    # pod on the node).
+    GFS_TREE="${BASE_DIR}/glusterfs-host-tree"
+    if [[ ! -d "$GFS_TREE" ]]; then
+        echo "==> Extracting GlusterFS host tree (first run only)..."
+        "${SCRIPT_DIR}/extract-glusterfs-host-tree.sh"
+    fi
+
+    echo "==> Pushing GlusterFS host tree to /data/glusterfs/..."
+    adb_root 'mkdir -p /data/glusterfs'
+    # Push bin/ and lib/ as wholes; adb push handles directories
+    # recursively. Refresh on every deploy so version bumps from the
+    # hr-fleet container ship to the device.
+    adb -s "$SERIAL" push "$GFS_TREE/bin" /data/glusterfs/ 2>&1 | tail -1
+    adb -s "$SERIAL" push "$GFS_TREE/lib" /data/glusterfs/ 2>&1 | tail -1
+    adb -s "$SERIAL" push "$GFS_TREE/MANIFEST" /data/glusterfs/MANIFEST 2>&1 | tail -1
+    adb_root 'chmod 755 /data/glusterfs/bin/glusterfs /data/glusterfs/bin/glusterfsd /data/glusterfs/lib/ld-linux-aarch64.so.1'
 fi
 adb_root 'chmod 755 /data/docker/bin/*'
 
