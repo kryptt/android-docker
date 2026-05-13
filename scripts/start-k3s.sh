@@ -34,6 +34,14 @@ log "========== K3S AGENT START =========="
 # inherited by k3s-agent → containerd → all snapshots.
 umask 022
 
+# --- Wireless ADB -------------------------------------------------------------
+# Make adbd listen on TCP 5555 so the host devcontainer can `adb connect
+# <node-ip>:5555` over VLAN 10 without USB. Idempotent: setprop+restart is a
+# no-op if adbd is already listening on the same port.
+setprop service.adb.tcp.port 5555 2>/dev/null
+stop adbd 2>/dev/null
+start adbd 2>/dev/null
+
 # --- SELinux & filesystem -----------------------------------------------------
 setenforce 0
 mount -o rw,remount / 2>/dev/null
@@ -252,6 +260,16 @@ if [ -x "$GFS_BIN" ] && [ -n "${NFS_SERVER:-}" ]; then
             log "WARNING: GlusterFS mount failed"
         fi
     fi
+fi
+
+# --- mount binary override ----------------------------------------------------
+# Android's /system/bin/mount is toybox, which can't handle the two-arg
+# "bind,remount" form kubelet uses for subPath mounts. k3s bundles a busybox
+# mount that works. Symlink it into /data/docker/bin so it's found first.
+K3S_CURRENT=$(readlink -f /var/lib/rancher/k3s/data/current 2>/dev/null)
+if [ -n "$K3S_CURRENT" ] && [ -f "$K3S_CURRENT/bin/busybox" ]; then
+    ln -sf "$K3S_CURRENT/bin/busybox" /data/docker/bin/mount
+    log "mount: busybox override -> $K3S_CURRENT/bin/busybox"
 fi
 
 # --- Start k3s agent ----------------------------------------------------------

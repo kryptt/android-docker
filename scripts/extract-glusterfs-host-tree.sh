@@ -44,11 +44,22 @@ ARCH_DIR=$(docker run --rm --platform="$PLATFORM" --entrypoint sh "$IMAGE" -c \
     'ls /usr/lib | grep -E "^(aarch64|arm)-linux-gnu$" | head -n1')
 echo "    image arch dir: $ARCH_DIR"
 
-# Discover all shared-library dependencies of the real binary
-# transitively (`ldd` follows the chain).
-echo "==> Resolving library dependencies..."
-DEPS=$(docker run --rm --platform="$PLATFORM" --entrypoint sh "$IMAGE" -c \
-    'ldd /usr/sbin/glusterfsd | awk "/=>/ {print \$3}" | grep -v "^(" | sort -u')
+# Discover all shared-library dependencies of the real binary AND every
+# xlator .so under /usr/lib/<arch>/glusterfs/. ldd on glusterfsd alone
+# only sees DT_NEEDED of the binary itself — it doesn't follow the
+# dlopen chain into xlators (rpc-transport/socket.so pulls libssl, the
+# performance xlators pull libaio, etc.). Without walking those, the
+# bundled tree was missing ~12 libs and the host mount died with
+# "Transport endpoint is not connected".
+echo "==> Resolving library dependencies (binary + every xlator)..."
+DEPS=$(docker run --rm --platform="$PLATFORM" --entrypoint sh "$IMAGE" -c "
+    set -e
+    targets=\$(find /usr/lib/$ARCH_DIR/glusterfs -name '*.so' -type f)
+    targets=\"\$targets /usr/sbin/glusterfsd\"
+    for t in \$targets; do
+        ldd \"\$t\" 2>/dev/null | awk '/=>/ {print \$3}' | grep -v '^(' || true
+    done | sort -u
+")
 
 echo "==> Staging tree at $OUT_DIR..."
 rm -rf "$OUT_DIR"
@@ -63,10 +74,18 @@ docker cp "$CID:/lib/$ARCH_DIR/ld-linux-aarch64.so.1" "$OUT_DIR/lib/" 2>/dev/nul
     || docker cp "$CID:/usr/lib/$ARCH_DIR/ld-linux-aarch64.so.1" "$OUT_DIR/lib/"
 
 # Every transitive shared library.
+#
+# `docker cp` without -L preserves symlinks verbatim. In Debian-based
+# images the paths `ldd` reports are sonames like `libtirpc.so.3` that
+# are themselves symlinks to versioned reals like `libtirpc.so.3.0.0`.
+# Without -L we ship the soname symlink and orphan the target, so the
+# bundled ld-linux can't open libtirpc.so.3 on the device. -L follows
+# the symlink and writes the real ELF under the soname name, which is
+# what DT_NEEDED in glusterfsd resolves against directly.
 for lib in $DEPS; do
     base=$(basename "$lib")
     if [[ ! -f "$OUT_DIR/lib/$base" ]]; then
-        docker cp "$CID:$lib" "$OUT_DIR/lib/$base"
+        docker cp -L "$CID:$lib" "$OUT_DIR/lib/$base"
     fi
 done
 

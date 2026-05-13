@@ -55,7 +55,7 @@ scripts/                Per-device flash, deploy, and boot scripts
 | `scripts/flash-device.sh <device>` | Interactive clean flash: wipe + LineageOS + custom kernel |
 | `scripts/deploy-device.sh <device>` | Push Docker binaries + boot script to device via adb |
 | `scripts/extract-glusterfs-host-tree.sh` | Extract glusterfs + libs + xlators from hr-fleet container into `glusterfs-host-tree/` for deploy-device.sh to push to `/data/glusterfs/` (k3s mode only). Re-run after a glusterfs-client image bump. |
-| `scripts/docker-swarm-boot.sh` | On-device boot script (Docker + NFS + Swarm) — shared by all devices |
+| `scripts/start-k3s.sh` | On-device k3s agent boot script (NFS + GlusterFS + k3s) — shared by all phones |
 | `scripts/devices.conf` | Device registry (serial, codename, platform, features) |
 | `scripts/swarm.conf` | Cluster config (timeouts, paths); secrets loaded from `.envrc`/`swarm.env` |
 | `.envrc` / `.envrc.example` | Network secrets: NFS server, swarm token, manager IP (gitignored) |
