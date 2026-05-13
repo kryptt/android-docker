@@ -159,23 +159,40 @@ Only after Phase 3 verifies BOTH op7 and op8 cleanly.
 
 In `~/workspace/misc/hr-fleet`:
 
-1. `fleet/home/onlyoffice.yaml` — change
+1. `fleet/home/onlyoffice.yaml` — **do not** undo the
+   anti-Android selector. Onlyoffice was the canary for this whole
+   rollout and the answer was "yes, /swarm/ha works on Android, no,
+   the workload itself doesn't". Verified 2026-05-12: pinning to
+   `hr-op7` got the pod past hostPath checks and the postgres-init
+   container, then `documentserver:9.3.1`'s RabbitMQ/Erlang
+   `beam.smp` sat at "Starting RabbitMQ Messaging Server" for >10
+   min with no listening ports until op7 transitioned to NotReady
+   (kubelet stream broken, device unreachable over wlan0).
+   Recovery required a physical reboot. See memory:
+   `feedback_android_heavy_workload_oom.md`.
+
+   The deployment now uses
 
    ```yaml
-   nodeSelector:
-     hr-home.xyz/has-udev: "true"
+   affinity:
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+           - matchExpressions:
+               - key: hr-home.xyz/stable
+                 operator: In
+                 values: ["true"]
+               - key: hr-home.xyz/android
+                 operator: NotIn
+                 values: ["true"]
    ```
 
-   back to
-
-   ```yaml
-   nodeSelector:
-     hr-home.xyz/stable: "true"
-   ```
-
-   (the comment block above it explaining the `has-udev` pin can come
-   out at the same time — leave a one-line note in the commit
-   message about why this is now safe).
+   which names the actual cause (`android`) rather than using the
+   `has-udev` proxy. Keep it that way for any other Erlang/JVM/
+   beam-style stack that gets added later. SubPath bind-mounts now
+   work on Android (`feedback_avoid_subpath_mounts.md` — busybox
+   mount override persisted in `start-k3s.sh`) so subPath isn't a
+   reason to exclude any more; "heavy boot" is.
 
 2. Decide what to do with `fleet/infra/glusterfs-client.yaml`:
 
@@ -246,9 +263,16 @@ adb -s 2e2e5cbf shell 'rm -rf /data/glusterfs && reboot'
   to keep the agent log clean for normal operation.
 
 - Memory entries that touch this area:
-  `~/.claude/projects/-home-rhansen-workspace-misc-hr-fleet/memory/feedback_android_k3s_umask.md`
-  (umask 0077 → 0022 fix from earlier this session, already in
-  start-k3s.sh).
-  `~/.claude/projects/-home-rhansen-workspace-misc-hr-fleet/memory/feedback_avoid_subpath_mounts.md`
-  (subPath bind-mounts fail on Android — applied to onlyoffice and
-  pgadmin already).
+  - `feedback_android_k3s_umask.md` — umask 0077 → 0022 fix, already
+    in start-k3s.sh.
+  - `feedback_avoid_subpath_mounts.md` — subPath was broken on
+    Android, now fixed via a busybox mount override at
+    `/data/docker/bin/mount`. Persisted in start-k3s.sh. This means
+    the multi-volume rewrites done earlier for pgadmin and onlyoffice
+    are no longer strictly required, but they're harmless and stay
+    in place.
+  - `feedback_android_heavy_workload_oom.md` — heavy stacks like
+    RabbitMQ/Erlang wedge op7 NotReady. Pin via android-NotIn
+    anti-affinity, not by feature label.
+
+  Path: `~/.claude/projects/-home-rhansen-workspace-misc-hr-fleet/memory/`
