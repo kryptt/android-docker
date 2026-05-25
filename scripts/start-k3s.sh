@@ -114,6 +114,19 @@ done
 iptables -P FORWARD ACCEPT 2>/dev/null
 ip6tables -P FORWARD ACCEPT 2>/dev/null
 
+# --- Detach netd eBPF socket filters -----------------------------------------
+# Android's netd attaches a cgroup_sock BPF program (cgroupsock_inet_create) to
+# the root cgroup that blocks socket(AF_INET) for UIDs not in its permission
+# map. Container processes running as non-root UIDs (e.g. kube-state-metrics at
+# uid 65534) hit "Operation not permitted" on any network call. Detaching the
+# program is safe: k3s pods don't need Android's per-app network accounting.
+BPF_NETD="/sys/fs/bpf/netd_shared"
+if [ -e "$BPF_NETD/prog_netd_cgroupsock_inet_create" ]; then
+    bpftool cgroup detach /sys/fs/cgroup/ sock_create \
+        pinned "$BPF_NETD/prog_netd_cgroupsock_inet_create" 2>/dev/null
+    log "netd BPF: detached cgroupsock_inet_create"
+fi
+
 # Bridge netfilter — required for kube-proxy to apply iptables to bridged traffic
 if [ -d /proc/sys/net/bridge ]; then
     echo 1 > /proc/sys/net/bridge/bridge-nf-call-iptables 2>/dev/null
