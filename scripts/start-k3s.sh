@@ -62,6 +62,15 @@ fi
 mkdir -p /var/lib /run/lock /run/containerd /var/empty /var/log /tmp
 [ -L /var/run ] || ln -sf /run /var/run 2>/dev/null
 
+# POSIX zoneinfo — Android ships only /system/usr/share/zoneinfo/{tzdata,tz_version}
+# (binary ICU format), but kube-state-metrics and other Go binaries need the
+# standard IANA directory tree. deploy-device.sh pushes it to /data/docker/zoneinfo/.
+if [ -d /data/docker/zoneinfo ] && [ ! -e /usr/share/zoneinfo/America ]; then
+    mkdir -p /usr/share
+    ln -sfn /data/docker/zoneinfo /usr/share/zoneinfo 2>/dev/null
+    log "zoneinfo: /usr/share/zoneinfo -> /data/docker/zoneinfo"
+fi
+
 # k3s extracts ~65MB of embedded binaries to /var/lib/rancher/k3s/data/ which
 # is on the root partition (~50MB free). Symlink to /data (164GB+ free).
 mkdir -p /data/docker/k3s-data/rancher

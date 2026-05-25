@@ -124,6 +124,21 @@ adb_root 'chmod 755 /data/glusterfs/bin/glusterfs /data/glusterfs/bin/glusterfsd
 
 adb_root 'chmod 755 /data/docker/bin/*'
 
+# --- Push POSIX zoneinfo ------------------------------------------------------
+# Android lacks the standard IANA zoneinfo directory tree that Go binaries (like
+# kube-state-metrics) expect at /usr/share/zoneinfo. Push the host's copy.
+ZONEINFO_SRC="/usr/share/zoneinfo"
+if [[ -d "$ZONEINFO_SRC" ]]; then
+    echo "==> Pushing POSIX zoneinfo..."
+    TMPTZ=$(mktemp)
+    tar czf "$TMPTZ" -C /usr/share zoneinfo
+    adb -s "$SERIAL" push "$TMPTZ" /data/docker/zoneinfo.tar.gz 2>&1 | tail -1
+    adb_root 'rm -rf /data/docker/zoneinfo && mkdir -p /data/docker && cd /data/docker && tar xzf zoneinfo.tar.gz && rm zoneinfo.tar.gz'
+    rm -f "$TMPTZ"
+else
+    echo "    SKIP: /usr/share/zoneinfo not found on host"
+fi
+
 # --- Push mount_nfs -----------------------------------------------------------
 echo "==> Pushing mount_nfs..."
 adb -s "$SERIAL" push "$MOUNT_NFS" /data/docker/bin/mount_nfs 2>&1 | tail -1
