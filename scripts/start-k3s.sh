@@ -52,7 +52,7 @@ mount -o rw,remount / 2>/dev/null
 
 # --- DNS + TLS certs ----------------------------------------------------------
 echo "nameserver 192.168.2.254" > /etc/resolv.conf 2>/dev/null
-echo "nameserver 8.8.4.4" >> /etc/resolv.conf 2>/dev/null
+echo "nameserver 1.1.1.1" >> /etc/resolv.conf 2>/dev/null
 if [ ! -f /etc/ssl/certs/ca-certificates.crt ]; then
     mkdir -p /etc/ssl/certs
     cat /system/etc/security/cacerts/*.0 > /etc/ssl/certs/ca-certificates.crt 2>/dev/null
