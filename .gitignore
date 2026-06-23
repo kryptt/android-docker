@@ -68,3 +68,4 @@ AnyKernel3/
 # image by scripts/extract-glusterfs-host-tree.sh and pushed to
 # /data/glusterfs/ on each device by scripts/deploy-device.sh.
 glusterfs-host-tree/
+/.grepai/
